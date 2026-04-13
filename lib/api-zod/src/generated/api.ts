@@ -39,6 +39,7 @@ export const LoginResponse = zod.object({
     id: zod.string(),
     name: zod.string(),
     email: zod.string(),
+    isAdmin: zod.boolean(),
     createdAt: zod.coerce.date(),
   }),
 });
@@ -50,6 +51,7 @@ export const GetMeResponse = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
+  isAdmin: zod.boolean(),
   createdAt: zod.coerce.date(),
 });
 
@@ -94,6 +96,27 @@ export const GetOrderResponse = zod.object({
 });
 
 /**
+ * @summary Update order status (admin only)
+ */
+export const UpdateOrderStatusParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateOrderStatusBody = zod.object({
+  status: zod.enum(["pending", "active", "completed", "cancelled"]),
+});
+
+export const UpdateOrderStatusResponse = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  instagramLink: zod.string(),
+  message: zod.string(),
+  packageType: zod.enum(["starter", "growth", "premium"]),
+  status: zod.enum(["pending", "active", "completed", "cancelled"]),
+  createdAt: zod.coerce.date(),
+});
+
+/**
  * @summary Get dashboard stats summary for authenticated user
  */
 export const GetDashboardSummaryResponse = zod.object({
@@ -102,3 +125,43 @@ export const GetDashboardSummaryResponse = zod.object({
   completedOrders: zod.number(),
   pendingOrders: zod.number(),
 });
+
+/**
+ * @summary List all orders from all clients (admin only)
+ */
+export const ListAllOrdersResponseItem = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  clientName: zod.string(),
+  clientEmail: zod.string(),
+  instagramLink: zod.string(),
+  message: zod.string(),
+  packageType: zod.enum(["starter", "growth", "premium"]),
+  status: zod.enum(["pending", "active", "completed", "cancelled"]),
+  createdAt: zod.coerce.date(),
+});
+export const ListAllOrdersResponse = zod.array(ListAllOrdersResponseItem);
+
+/**
+ * @summary Get platform-wide stats (admin only)
+ */
+export const GetAdminSummaryResponse = zod.object({
+  totalClients: zod.number(),
+  totalOrders: zod.number(),
+  pendingOrders: zod.number(),
+  activeOrders: zod.number(),
+  completedOrders: zod.number(),
+  cancelledOrders: zod.number(),
+});
+
+/**
+ * @summary List all registered clients (admin only)
+ */
+export const ListClientsResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  email: zod.string(),
+  totalOrders: zod.number(),
+  createdAt: zod.coerce.date(),
+});
+export const ListClientsResponse = zod.array(ListClientsResponseItem);

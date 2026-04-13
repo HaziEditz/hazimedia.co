@@ -13,6 +13,10 @@ import Orders from "@/pages/dashboard/orders";
 import OrderPromotion from "@/pages/dashboard/order-promotion";
 import Settings from "@/pages/dashboard/settings";
 
+import AdminDashboard from "@/pages/admin/index";
+import AdminOrders from "@/pages/admin/orders";
+import AdminClients from "@/pages/admin/clients";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -22,7 +26,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function ProtectedRoute({ component: Component, ...rest }: any) {
+function ProtectedRoute({ component: Component, requireAdmin = false, ...rest }: any) {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
@@ -31,6 +35,10 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
 
   if (!user) {
     return <Redirect to="/login" />;
+  }
+
+  if (requireAdmin && !user.isAdmin) {
+    return <Redirect to="/dashboard" />;
   }
 
   return <Component {...rest} />;
@@ -54,6 +62,16 @@ function Router() {
       </Route>
       <Route path="/dashboard/settings">
         <ProtectedRoute component={Settings} />
+      </Route>
+
+      <Route path="/admin">
+        <ProtectedRoute component={AdminDashboard} requireAdmin={true} />
+      </Route>
+      <Route path="/admin/orders">
+        <ProtectedRoute component={AdminOrders} requireAdmin={true} />
+      </Route>
+      <Route path="/admin/clients">
+        <ProtectedRoute component={AdminClients} requireAdmin={true} />
       </Route>
       
       <Route component={NotFound} />

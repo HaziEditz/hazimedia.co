@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./adminOrder";
+export * from "./adminOrderPackageType";
+export * from "./adminOrderStatus";
+export * from "./adminSummary";
 export * from "./authResponse";
+export * from "./clientInfo";
 export * from "./createOrderBody";
 export * from "./createOrderBodyPackageType";
 export * from "./dashboardSummary";
@@ -17,4 +22,6 @@ export * from "./order";
 export * from "./orderPackageType";
 export * from "./orderStatus";
 export * from "./registerBody";
+export * from "./updateOrderStatusBody";
+export * from "./updateOrderStatusBodyStatus";
 export * from "./user";

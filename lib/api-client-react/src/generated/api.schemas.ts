@@ -30,6 +30,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  isAdmin: boolean;
   createdAt: string;
 }
 
@@ -51,6 +52,20 @@ export interface CreateOrderBody {
   instagramLink: string;
   message: string;
   packageType: CreateOrderBodyPackageType;
+}
+
+export type UpdateOrderStatusBodyStatus =
+  (typeof UpdateOrderStatusBodyStatus)[keyof typeof UpdateOrderStatusBodyStatus];
+
+export const UpdateOrderStatusBodyStatus = {
+  pending: "pending",
+  active: "active",
+  completed: "completed",
+  cancelled: "cancelled",
+} as const;
+
+export interface UpdateOrderStatusBody {
+  status: UpdateOrderStatusBodyStatus;
 }
 
 export type OrderPackageType =
@@ -81,9 +96,57 @@ export interface Order {
   createdAt: string;
 }
 
+export type AdminOrderPackageType =
+  (typeof AdminOrderPackageType)[keyof typeof AdminOrderPackageType];
+
+export const AdminOrderPackageType = {
+  starter: "starter",
+  growth: "growth",
+  premium: "premium",
+} as const;
+
+export type AdminOrderStatus =
+  (typeof AdminOrderStatus)[keyof typeof AdminOrderStatus];
+
+export const AdminOrderStatus = {
+  pending: "pending",
+  active: "active",
+  completed: "completed",
+  cancelled: "cancelled",
+} as const;
+
+export interface AdminOrder {
+  id: string;
+  userId: string;
+  clientName: string;
+  clientEmail: string;
+  instagramLink: string;
+  message: string;
+  packageType: AdminOrderPackageType;
+  status: AdminOrderStatus;
+  createdAt: string;
+}
+
+export interface ClientInfo {
+  id: string;
+  name: string;
+  email: string;
+  totalOrders: number;
+  createdAt: string;
+}
+
 export interface DashboardSummary {
   totalOrders: number;
   activeOrders: number;
   completedOrders: number;
   pendingOrders: number;
+}
+
+export interface AdminSummary {
+  totalClients: number;
+  totalOrders: number;
+  pendingOrders: number;
+  activeOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
 }

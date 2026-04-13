@@ -7,6 +7,16 @@ import { authMiddleware, signToken, type AuthRequest } from "../middlewares/auth
 
 const router: IRouter = Router();
 
+function serializeUser(user: typeof usersTable.$inferSelect) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin === "true",
+    createdAt: user.createdAt,
+  };
+}
+
 router.post("/auth/register", async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -36,15 +46,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
   const token = signToken(user.id);
 
-  res.status(201).json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      createdAt: user.createdAt,
-    },
-  });
+  res.status(201).json({ token, user: serializeUser(user) });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -74,16 +76,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const token = signToken(user.id);
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      createdAt: user.createdAt,
-    },
-  });
+  res.json({ token, user: serializeUser(user) });
 });
 
 router.get("/auth/me", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
@@ -98,12 +91,35 @@ router.get("/auth/me", authMiddleware, async (req: AuthRequest, res): Promise<vo
     return;
   }
 
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    createdAt: user.createdAt,
-  });
+  res.json(serializeUser(user));
+});
+
+router.post("/auth/make-admin", async (req, res): Promise<void> => {
+  const { email, secret } = req.body as { email?: string; secret?: string };
+  const adminSecret = process.env.SESSION_SECRET ?? "hazi-media-secret";
+
+  if (!secret || secret !== adminSecret) {
+    res.status(403).json({ error: "Forbidden", message: "Invalid secret" });
+    return;
+  }
+
+  if (!email) {
+    res.status(400).json({ error: "Bad request", message: "Email is required" });
+    return;
+  }
+
+  const [user] = await db
+    .update(usersTable)
+    .set({ isAdmin: "true" })
+    .where(eq(usersTable.email, email))
+    .returning();
+
+  if (!user) {
+    res.status(404).json({ error: "Not found", message: "User not found" });
+    return;
+  }
+
+  res.json({ message: `${user.name} is now an admin`, user: serializeUser(user) });
 });
 
 export default router;
