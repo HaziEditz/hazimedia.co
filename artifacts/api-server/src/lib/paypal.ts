@@ -4,9 +4,9 @@ const PAYPAL_BASE =
     : "https://api-m.paypal.com";
 
 export const PACKAGE_PRICES: Record<string, { amount: string; label: string }> = {
-  starter: { amount: "49.00", label: "Starter Promotion" },
-  growth: { amount: "149.00", label: "Growth Promotion" },
-  premium: { amount: "299.00", label: "Premium Promotion" },
+  starter: { amount: "19.00", label: "Starter Promotion" },
+  growth: { amount: "29.00", label: "Growth Promotion" },
+  premium: { amount: "49.00", label: "Premium Promotion" },
 };
 
 async function getAccessToken(): Promise<string> {

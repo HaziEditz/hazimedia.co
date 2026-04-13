@@ -28,7 +28,7 @@ const packages = [
     id: "starter",
     title: "Starter",
     description: "Basic promotion campaign",
-    price: 49,
+    price: 19,
     icon: Rocket,
     color: "text-muted-foreground"
   },
@@ -36,7 +36,7 @@ const packages = [
     id: "growth",
     title: "Growth",
     description: "Expanded reach with targeting",
-    price: 149,
+    price: 29,
     icon: Zap,
     color: "text-purple-500"
   },
@@ -44,7 +44,7 @@ const packages = [
     id: "premium",
     title: "Premium",
     description: "Full-scale domination campaign",
-    price: 299,
+    price: 49,
     icon: Crown,
     color: "text-primary"
   }
