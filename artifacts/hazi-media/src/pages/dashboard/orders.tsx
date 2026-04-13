@@ -1,0 +1,107 @@
+import { useListOrders, getListOrdersQueryKey } from "@workspace/api-client-react";
+import { format } from "date-fns";
+import { Loader2, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DashboardLayout } from "./layout";
+
+export default function Orders() {
+  const { data: orders, isLoading } = useListOrders({
+    query: {
+      queryKey: getListOrdersQueryKey(),
+    }
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge variant="default" className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20">Active</Badge>;
+      case "completed":
+        return <Badge variant="default" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Completed</Badge>;
+      case "pending":
+        return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">Pending</Badge>;
+      case "cancelled":
+        return <Badge variant="destructive" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">Cancelled</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getPackageBadge = (pkg: string) => {
+    switch (pkg) {
+      case "premium":
+        return <Badge variant="outline" className="border-primary/50 text-primary">Premium</Badge>;
+      case "growth":
+        return <Badge variant="outline" className="border-purple-500/50 text-purple-500">Growth</Badge>;
+      case "starter":
+        return <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">Starter</Badge>;
+      default:
+        return <Badge variant="outline">{pkg}</Badge>;
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+          <p className="text-muted-foreground mt-2">Manage and track your promotion requests.</p>
+        </div>
+
+        <Card className="bg-card/50 backdrop-blur-sm border-border/40 overflow-hidden">
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : !orders || orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <ExternalLink className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium">No orders yet</h3>
+                <p className="text-muted-foreground max-w-sm mt-2">
+                  You haven't submitted any promotion requests. Head over to the New Promotion page to get started.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="hover:bg-transparent border-border/40">
+                    <TableHead>Date</TableHead>
+                    <TableHead>Target Link</TableHead>
+                    <TableHead>Package</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id} className="border-border/40 hover:bg-muted/30">
+                      <TableCell className="font-medium">
+                        {format(new Date(order.createdAt), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <a 
+                          href={order.instagramLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-primary hover:underline"
+                        >
+                          <span className="truncate max-w-[200px]">{order.instagramLink}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </TableCell>
+                      <TableCell>{getPackageBadge(order.packageType)}</TableCell>
+                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Hazi Media"
+version = "1.0.0"
+id = "artifacts/hazi-media"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20299
+
+[services.development]
+run = "pnpm --filter @workspace/hazi-media run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hazi-media", "run", "build" ]
+publicDir = "artifacts/hazi-media/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20299"
+BASE_PATH = "/"
