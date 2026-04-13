@@ -284,6 +284,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /payments/create-paypal-order:
+    post:
+      operationId: createPaypalOrder
+      tags: [payments]
+      summary: Create a PayPal order for a promotion package
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaypalOrderBody"
+      responses:
+        "200":
+          description: PayPal order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePaypalOrderResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /payments/capture-paypal-order:
+    post:
+      operationId: capturePaypalOrder
+      tags: [payments]
+      summary: Capture a PayPal payment and create the promotion order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapturePaypalOrderBody"
+      responses:
+        "201":
+          description: Payment captured and order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/clients:
     get:
       operationId: listClients
@@ -518,6 +572,53 @@ components:
         - activeOrders
         - completedOrders
         - pendingOrders
+
+    CreatePaypalOrderBody:
+      type: object
+      properties:
+        packageType:
+          type: string
+          enum: [starter, growth, premium]
+        instagramLink:
+          type: string
+        message:
+          type: string
+      required:
+        - packageType
+        - instagramLink
+        - message
+
+    CreatePaypalOrderResponse:
+      type: object
+      properties:
+        paypalOrderId:
+          type: string
+        amount:
+          type: string
+        currency:
+          type: string
+      required:
+        - paypalOrderId
+        - amount
+        - currency
+
+    CapturePaypalOrderBody:
+      type: object
+      properties:
+        paypalOrderId:
+          type: string
+        instagramLink:
+          type: string
+        message:
+          type: string
+        packageType:
+          type: string
+          enum: [starter, growth, premium]
+      required:
+        - paypalOrderId
+        - instagramLink
+        - message
+        - packageType
 
     AdminSummary:
       type: object

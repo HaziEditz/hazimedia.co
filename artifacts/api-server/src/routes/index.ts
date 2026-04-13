@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import ordersRouter from "./orders";
 import dashboardRouter from "./dashboard";
 import adminRouter from "./admin";
+import paymentsRouter from "./payments";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(authRouter);
 router.use(ordersRouter);
 router.use(dashboardRouter);
 router.use(adminRouter);
+router.use(paymentsRouter);
 
 export default router;

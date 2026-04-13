@@ -155,6 +155,31 @@ export const GetAdminSummaryResponse = zod.object({
 });
 
 /**
+ * @summary Create a PayPal order for a promotion package
+ */
+export const CreatePaypalOrderBody = zod.object({
+  packageType: zod.enum(["starter", "growth", "premium"]),
+  instagramLink: zod.string(),
+  message: zod.string(),
+});
+
+export const CreatePaypalOrderResponse = zod.object({
+  paypalOrderId: zod.string(),
+  amount: zod.string(),
+  currency: zod.string(),
+});
+
+/**
+ * @summary Capture a PayPal payment and create the promotion order
+ */
+export const CapturePaypalOrderBody = zod.object({
+  paypalOrderId: zod.string(),
+  instagramLink: zod.string(),
+  message: zod.string(),
+  packageType: zod.enum(["starter", "growth", "premium"]),
+});
+
+/**
  * @summary List all registered clients (admin only)
  */
 export const ListClientsResponseItem = zod.object({

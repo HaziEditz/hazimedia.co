@@ -142,6 +142,43 @@ export interface DashboardSummary {
   pendingOrders: number;
 }
 
+export type CreatePaypalOrderBodyPackageType =
+  (typeof CreatePaypalOrderBodyPackageType)[keyof typeof CreatePaypalOrderBodyPackageType];
+
+export const CreatePaypalOrderBodyPackageType = {
+  starter: "starter",
+  growth: "growth",
+  premium: "premium",
+} as const;
+
+export interface CreatePaypalOrderBody {
+  packageType: CreatePaypalOrderBodyPackageType;
+  instagramLink: string;
+  message: string;
+}
+
+export interface CreatePaypalOrderResponse {
+  paypalOrderId: string;
+  amount: string;
+  currency: string;
+}
+
+export type CapturePaypalOrderBodyPackageType =
+  (typeof CapturePaypalOrderBodyPackageType)[keyof typeof CapturePaypalOrderBodyPackageType];
+
+export const CapturePaypalOrderBodyPackageType = {
+  starter: "starter",
+  growth: "growth",
+  premium: "premium",
+} as const;
+
+export interface CapturePaypalOrderBody {
+  paypalOrderId: string;
+  instagramLink: string;
+  message: string;
+  packageType: CapturePaypalOrderBodyPackageType;
+}
+
 export interface AdminSummary {
   totalClients: number;
   totalOrders: number;

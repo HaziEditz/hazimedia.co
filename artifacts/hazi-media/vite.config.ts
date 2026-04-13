@@ -28,6 +28,9 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
+  define: {
+    'import.meta.env.VITE_PAYPAL_CLIENT_ID': JSON.stringify(process.env.PAYPAL_CLIENT_ID ?? '')
+  },
   plugins: [
     react(),
     tailwindcss(),

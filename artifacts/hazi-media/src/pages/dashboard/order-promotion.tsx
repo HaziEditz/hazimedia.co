@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useCreateOrder } from "@workspace/api-client-react";
+import { useCreatePaypalOrder, useCapturePaypalOrder, getListOrdersQueryKey, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { getListOrdersQueryKey, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
-import { Loader2, Rocket, Zap, Crown } from "lucide-react";
+import { Loader2, Rocket, Zap, Crown, CheckCircle2 } from "lucide-react";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "./layout";
@@ -23,14 +23,46 @@ const formSchema = z.object({
   packageType: z.enum(["starter", "growth", "premium"]),
 });
 
+const packages = [
+  {
+    id: "starter",
+    title: "Starter",
+    description: "Basic promotion campaign",
+    price: 49,
+    icon: Rocket,
+    color: "text-muted-foreground"
+  },
+  {
+    id: "growth",
+    title: "Growth",
+    description: "Expanded reach with targeting",
+    price: 149,
+    icon: Zap,
+    color: "text-purple-500"
+  },
+  {
+    id: "premium",
+    title: "Premium",
+    description: "Full-scale domination campaign",
+    price: 299,
+    icon: Crown,
+    color: "text-primary"
+  }
+] as const;
+
 export default function OrderPromotion() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const createOrder = useCreateOrder();
+  const createPaypalOrder = useCreatePaypalOrder();
+  const capturePaypalOrder = useCapturePaypalOrder();
+
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [successOrderId, setSuccessOrderId] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: "onChange",
     defaultValues: {
       instagramLink: "",
       message: "",
@@ -38,52 +70,84 @@ export default function OrderPromotion() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createOrder.mutate({
-      data: values
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Order submitted",
-          description: "Your promotion request has been received.",
-        });
-        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
-        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
-        setLocation("/dashboard/orders");
-      },
-      onError: (error) => {
-        toast({
-          variant: "destructive",
-          title: "Submission failed",
-          description: error.message || "An unexpected error occurred.",
-        });
-      }
-    });
+  const selectedPackage = form.watch("packageType");
+  const isFormValid = form.formState.isValid;
+
+  const handleCreateOrder = async () => {
+    const values = form.getValues();
+    try {
+      const response = await createPaypalOrder.mutateAsync({
+        data: values
+      });
+      return response.paypalOrderId;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Could not create order",
+        description: error.message || "An error occurred while setting up the payment.",
+      });
+      throw error;
+    }
   };
 
-  const packages = [
-    {
-      id: "starter",
-      title: "Starter",
-      description: "Perfect for testing the waters",
-      icon: Rocket,
-      color: "text-muted-foreground"
-    },
-    {
-      id: "growth",
-      title: "Growth",
-      description: "Our most popular selection",
-      icon: Zap,
-      color: "text-purple-500"
-    },
-    {
-      id: "premium",
-      title: "Premium",
-      description: "Maximum attention and conversion",
-      icon: Crown,
-      color: "text-primary"
+  const handleApprove = async (data: any) => {
+    const values = form.getValues();
+    try {
+      const order = await capturePaypalOrder.mutateAsync({
+        data: {
+          paypalOrderId: data.orderID,
+          instagramLink: values.instagramLink,
+          message: values.message,
+          packageType: values.packageType,
+        }
+      });
+      
+      setIsSuccess(true);
+      setSuccessOrderId(order.id);
+      
+      queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+      
+      setTimeout(() => {
+        setLocation("/dashboard/orders");
+      }, 3000);
+      
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Payment failed",
+        description: error.message || "An error occurred while capturing the payment.",
+      });
     }
-  ];
+  };
+
+  if (isSuccess) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto flex flex-col items-center justify-center py-20 text-center space-y-6">
+          <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
+            <CheckCircle2 className="h-12 w-12 text-primary" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight">Payment Successful</h1>
+            <p className="text-muted-foreground text-lg">
+              Your promotion campaign has been launched.
+            </p>
+            {successOrderId && (
+              <p className="text-sm font-mono bg-muted/50 p-2 rounded inline-block mt-4">
+                Order ID: {successOrderId}
+              </p>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground animate-pulse">
+            Redirecting to your orders...
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const selectedPkgData = packages.find(p => p.id === selectedPackage);
 
   return (
     <DashboardLayout>
@@ -94,7 +158,7 @@ export default function OrderPromotion() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
             <Card className="bg-card/50 backdrop-blur-sm border-border/40">
               <CardHeader>
                 <CardTitle>Campaign Details</CardTitle>
@@ -166,7 +230,8 @@ export default function OrderPromotion() {
                               <FormLabel className="flex flex-col items-center justify-between rounded-lg border-2 border-border/40 bg-background/50 p-4 hover:bg-muted/50 hover:text-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all">
                                 <pkg.icon className={`mb-3 h-6 w-6 ${pkg.color}`} />
                                 <span className="font-semibold text-sm">{pkg.title}</span>
-                                <span className="text-xs text-muted-foreground mt-1 text-center">{pkg.description}</span>
+                                <span className="font-bold text-lg mt-1">${pkg.price}</span>
+                                <span className="text-xs text-muted-foreground mt-2 text-center h-8 flex items-center">{pkg.description}</span>
                               </FormLabel>
                             </FormItem>
                           ))}
@@ -177,23 +242,50 @@ export default function OrderPromotion() {
                   )}
                 />
               </CardContent>
-              <CardFooter className="flex justify-end pt-6 border-t border-border/40">
-                <Button 
-                  type="submit" 
-                  size="lg"
-                  disabled={createOrder.isPending}
-                  className="w-full sm:w-auto min-w-[200px]"
-                >
-                  {createOrder.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Launch Campaign"
-                  )}
-                </Button>
-              </CardFooter>
+            </Card>
+
+            <Card className="bg-card/50 backdrop-blur-sm border-border/40 border-primary/20">
+              <CardHeader>
+                <CardTitle>Checkout</CardTitle>
+                <CardDescription>Complete your payment to launch the campaign.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex justify-between items-center py-4 border-y border-border/40">
+                  <div>
+                    <p className="font-medium text-lg">{selectedPkgData?.title} Package</p>
+                    <p className="text-muted-foreground text-sm">One-time payment</p>
+                  </div>
+                  <p className="text-2xl font-bold">${selectedPkgData?.price}</p>
+                </div>
+                
+                {!isFormValid ? (
+                  <div className="p-4 bg-muted/50 rounded-md text-sm text-center text-muted-foreground">
+                    Please fill out all campaign details above to proceed with payment.
+                  </div>
+                ) : (
+                  <div className="relative min-h-[150px] z-0">
+                    <PayPalScriptProvider options={{ 
+                      clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
+                      components: "buttons",
+                      currency: "USD"
+                    }}>
+                      <PayPalButtons 
+                        style={{ layout: "vertical", color: "blue", shape: "rect", label: "pay" }}
+                        createOrder={handleCreateOrder}
+                        onApprove={handleApprove}
+                        onError={(err) => {
+                          console.error("PayPal Error:", err);
+                          toast({
+                            variant: "destructive",
+                            title: "Payment Error",
+                            description: "There was an issue loading or processing PayPal. Please try again."
+                          });
+                        }}
+                      />
+                    </PayPalScriptProvider>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </form>
         </Form>
