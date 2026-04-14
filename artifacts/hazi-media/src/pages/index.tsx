@@ -63,25 +63,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20 border-y border-border/40 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-            {[
-              { label: "Active Campaigns", value: "500+" },
-              { label: "Impressions Generated", value: "2.4B" },
-              { label: "Average ROI", value: "315%" },
-              { label: "Partner Creators", value: "10k+" }
-            ].map((stat, i) => (
-              <div key={i} className="text-center reveal opacity-0" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="text-4xl md:text-5xl font-bold text-foreground mb-2 tracking-tight">{stat.value}</div>
-                <div className="text-sm md:text-base text-muted-foreground font-medium">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Services Section */}
       <section id="services" className="py-32 relative">
         <div className="container mx-auto px-4">
