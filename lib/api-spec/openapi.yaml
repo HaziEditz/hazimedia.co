@@ -300,6 +300,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /orders/{id}/request-payment:
+    post:
+      operationId: requestPayment
+      tags: [orders]
+      summary: Admin requests payment from client (sets order active and sends payment_request message)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Payment requested, message created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders/{id}/status:
     patch:
       operationId: updateOrderStatus
@@ -708,6 +735,9 @@ components:
           type: boolean
         content:
           type: string
+        messageType:
+          type: string
+          enum: [text, payment_request]
         createdAt:
           type: string
       required:
@@ -717,6 +747,7 @@ components:
         - senderName
         - isAdmin
         - content
+        - messageType
         - createdAt
 
     SendMessageBody:
@@ -726,6 +757,9 @@ components:
           type: string
           minLength: 1
           maxLength: 2000
+        messageType:
+          type: string
+          enum: [text, payment_request]
       required:
         - content
 

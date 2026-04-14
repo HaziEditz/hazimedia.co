@@ -6,16 +6,23 @@ import { createPayPalOrder, capturePayPalOrder, PACKAGE_PRICES } from "../lib/pa
 
 const router: IRouter = Router();
 
-async function canAccessOrder(userId: string, orderId: string, isAdmin: boolean): Promise<typeof ordersTable.$inferSelect | null> {
+async function getCallerIsAdmin(userId: string): Promise<boolean> {
+  const [user] = await db.select({ isAdmin: usersTable.isAdmin })
+    .from(usersTable).where(eq(usersTable.id, userId));
+  return user?.isAdmin === "true" || user?.isAdmin === true;
+}
+
+async function canAccessOrder(userId: string, orderId: string): Promise<{ order: typeof ordersTable.$inferSelect; isAdmin: boolean } | null> {
   const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, orderId));
   if (!order) return null;
+  const isAdmin = await getCallerIsAdmin(userId);
   if (!isAdmin && order.userId !== userId) return null;
-  return order;
+  return { order, isAdmin };
 }
 
 router.get("/orders/:id/messages", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
-  const order = await canAccessOrder(req.userId!, req.params.id, req.isAdmin!);
-  if (!order) {
+  const access = await canAccessOrder(req.userId!, req.params.id);
+  if (!access) {
     res.status(403).json({ error: "Forbidden", message: "Order not found or access denied" });
     return;
   }
@@ -26,6 +33,7 @@ router.get("/orders/:id/messages", authMiddleware, async (req: AuthRequest, res)
       orderId: messagesTable.orderId,
       userId: messagesTable.userId,
       content: messagesTable.content,
+      messageType: messagesTable.messageType,
       createdAt: messagesTable.createdAt,
       senderName: usersTable.name,
       isAdmin: usersTable.isAdmin,
@@ -42,22 +50,25 @@ router.get("/orders/:id/messages", authMiddleware, async (req: AuthRequest, res)
 });
 
 router.post("/orders/:id/messages", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
-  const order = await canAccessOrder(req.userId!, req.params.id, req.isAdmin!);
-  if (!order) {
+  const access = await canAccessOrder(req.userId!, req.params.id);
+  if (!access) {
     res.status(403).json({ error: "Forbidden", message: "Order not found or access denied" });
     return;
   }
 
-  const { content } = req.body as { content: string };
+  const { content, messageType } = req.body as { content: string; messageType?: string };
   if (!content || typeof content !== "string" || content.trim().length === 0) {
     res.status(400).json({ error: "Validation error", message: "Message content is required" });
     return;
   }
 
+  const finalType = messageType === "payment_request" ? "payment_request" : "text";
+
   const [msg] = await db.insert(messagesTable).values({
     orderId: req.params.id,
     userId: req.userId!,
     content: content.trim(),
+    messageType: finalType,
   }).returning();
 
   const [user] = await db.select({ name: usersTable.name, isAdmin: usersTable.isAdmin })
@@ -68,6 +79,54 @@ router.post("/orders/:id/messages", authMiddleware, async (req: AuthRequest, res
     orderId: msg.orderId,
     userId: msg.userId,
     content: msg.content,
+    messageType: msg.messageType,
+    createdAt: msg.createdAt,
+    senderName: user.name,
+    isAdmin: user.isAdmin === "true" || user.isAdmin === true,
+  });
+});
+
+router.post("/orders/:id/request-payment", authMiddleware, async (req: AuthRequest, res): Promise<void> => {
+  const isAdmin = await getCallerIsAdmin(req.userId!);
+  if (!isAdmin) {
+    res.status(403).json({ error: "Forbidden", message: "Admin access required" });
+    return;
+  }
+
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.id, req.params.id));
+  if (!order) {
+    res.status(404).json({ error: "Not found", message: "Order not found" });
+    return;
+  }
+
+  if (order.status !== "pending" && order.status !== "active") {
+    res.status(400).json({ error: "Invalid status", message: "Order cannot request payment in current state" });
+    return;
+  }
+
+  if (order.status === "pending") {
+    await db.update(ordersTable).set({ status: "active" }).where(eq(ordersTable.id, req.params.id));
+  }
+
+  const pkg = PACKAGE_PRICES[order.packageType as keyof typeof PACKAGE_PRICES];
+  const price = pkg ?? "0.00";
+
+  const [msg] = await db.insert(messagesTable).values({
+    orderId: req.params.id,
+    userId: req.userId!,
+    content: `💳 Payment requested — $${price} for the ${order.packageType} package. Click below to pay and we'll get started right away!`,
+    messageType: "payment_request",
+  }).returning();
+
+  const [user] = await db.select({ name: usersTable.name, isAdmin: usersTable.isAdmin })
+    .from(usersTable).where(eq(usersTable.id, req.userId!));
+
+  res.status(201).json({
+    id: msg.id,
+    orderId: msg.orderId,
+    userId: msg.userId,
+    content: msg.content,
+    messageType: msg.messageType,
     createdAt: msg.createdAt,
     senderName: user.name,
     isAdmin: user.isAdmin === "true" || user.isAdmin === true,
@@ -89,7 +148,7 @@ router.post("/orders/:id/pay", authMiddleware, async (req: AuthRequest, res): Pr
     return;
   }
 
-  const pkg = PACKAGE_PRICES[order.packageType];
+  const pkg = PACKAGE_PRICES[order.packageType as keyof typeof PACKAGE_PRICES];
   if (!pkg) {
     res.status(400).json({ error: "Invalid package", message: "Unknown package type" });
     return;

@@ -5,6 +5,7 @@
  * Hazi Media API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SendMessageBodyMessageType } from "./sendMessageBodyMessageType";
 
 export interface SendMessageBody {
   /**
@@ -12,4 +13,5 @@ export interface SendMessageBody {
    * @maxLength 2000
    */
   content: string;
+  messageType?: SendMessageBodyMessageType;
 }

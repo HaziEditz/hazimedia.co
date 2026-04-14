@@ -947,6 +947,90 @@ export const useCaptureOrderPayment = <
 };
 
 /**
+ * @summary Admin requests payment from client (sets order active and sends payment_request message)
+ */
+export const getRequestPaymentUrl = (id: string) => {
+  return `/api/orders/${id}/request-payment`;
+};
+
+export const requestPayment = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Message> => {
+  return customFetch<Message>(getRequestPaymentUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRequestPaymentMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestPayment>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestPayment>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["requestPayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestPayment>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return requestPayment(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestPaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestPayment>>
+>;
+
+export type RequestPaymentMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Admin requests payment from client (sets order active and sends payment_request message)
+ */
+export const useRequestPayment = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestPayment>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestPayment>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getRequestPaymentMutationOptions(options));
+};
+
+/**
  * @summary Update order status (admin only)
  */
 export const getUpdateOrderStatusUrl = (id: string) => {

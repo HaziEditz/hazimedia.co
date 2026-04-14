@@ -41,6 +41,7 @@ Full-stack SaaS platform for a digital marketing agency. Users can sign up, log 
 ### Database (`lib/db/`)
 - `users` table — id, name, email, password_hash, created_at
 - `orders` table — id, user_id, instagram_link, message, package_type, status, created_at
+- `messages` table — id, order_id, user_id, content, message_type (text|payment_request), created_at
 
 ### Shared Libraries
 - `lib/api-spec/openapi.yaml` — Single source of truth for API contracts

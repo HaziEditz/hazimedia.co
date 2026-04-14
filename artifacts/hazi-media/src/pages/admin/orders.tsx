@@ -295,7 +295,9 @@ export default function AdminOrders() {
                   <ChatPanel 
                     orderId={selectedOrder.id} 
                     currentUserId={user.id} 
-                    currentUserIsAdmin={true} 
+                    currentUserIsAdmin={true}
+                    orderStatus={selectedOrder.status}
+                    packageType={selectedOrder.packageType}
                   />
                 </div>
               )}

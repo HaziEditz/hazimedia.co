@@ -5,6 +5,7 @@
  * Hazi Media API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MessageMessageType } from "./messageMessageType";
 
 export interface Message {
   id: string;
@@ -13,5 +14,6 @@ export interface Message {
   senderName: string;
   isAdmin: boolean;
   content: string;
+  messageType: MessageMessageType;
   createdAt: string;
 }

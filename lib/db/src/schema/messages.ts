@@ -11,6 +11,7 @@ export const messagesTable = pgTable("messages", {
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  messageType: text("message_type").notNull().default("text").$type<"text" | "payment_request">(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

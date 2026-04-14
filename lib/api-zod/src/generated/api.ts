@@ -109,6 +109,7 @@ export const ListMessagesResponseItem = zod.object({
   senderName: zod.string(),
   isAdmin: zod.boolean(),
   content: zod.string(),
+  messageType: zod.enum(["text", "payment_request"]),
   createdAt: zod.string(),
 });
 export const ListMessagesResponse = zod.array(ListMessagesResponseItem);
@@ -124,6 +125,7 @@ export const sendMessageBodyContentMax = 2000;
 
 export const SendMessageBody = zod.object({
   content: zod.string().min(1).max(sendMessageBodyContentMax),
+  messageType: zod.enum(["text", "payment_request"]).optional(),
 });
 
 /**
@@ -158,6 +160,13 @@ export const CaptureOrderPaymentResponse = zod.object({
   packageType: zod.enum(["starter", "growth", "premium"]),
   status: zod.enum(["pending", "active", "completed", "cancelled"]),
   createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Admin requests payment from client (sets order active and sends payment_request message)
+ */
+export const RequestPaymentParams = zod.object({
+  id: zod.coerce.string(),
 });
 
 /**

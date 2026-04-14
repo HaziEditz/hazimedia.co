@@ -142,6 +142,14 @@ export interface DashboardSummary {
   pendingOrders: number;
 }
 
+export type MessageMessageType =
+  (typeof MessageMessageType)[keyof typeof MessageMessageType];
+
+export const MessageMessageType = {
+  text: "text",
+  payment_request: "payment_request",
+} as const;
+
 export interface Message {
   id: string;
   orderId: string;
@@ -149,8 +157,17 @@ export interface Message {
   senderName: string;
   isAdmin: boolean;
   content: string;
+  messageType: MessageMessageType;
   createdAt: string;
 }
+
+export type SendMessageBodyMessageType =
+  (typeof SendMessageBodyMessageType)[keyof typeof SendMessageBodyMessageType];
+
+export const SendMessageBodyMessageType = {
+  text: "text",
+  payment_request: "payment_request",
+} as const;
 
 export interface SendMessageBody {
   /**
@@ -158,6 +175,7 @@ export interface SendMessageBody {
    * @maxLength 2000
    */
   content: string;
+  messageType?: SendMessageBodyMessageType;
 }
 
 export interface CaptureOrderPaymentBody {
