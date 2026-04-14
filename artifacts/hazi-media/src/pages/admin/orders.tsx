@@ -10,6 +10,8 @@ import { format } from "date-fns";
 import { Loader2, ExternalLink, Mail } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
+import { ChatPanel } from "@/components/ChatPanel";
 import {
   Table,
   TableBody,
@@ -60,6 +62,7 @@ type Order = {
 export default function AdminOrders() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const { data: orders, isLoading } = useListAllOrders({
@@ -275,6 +278,27 @@ export default function AdminOrders() {
                   Contact {selectedOrder.clientName} via Email
                 </Button>
               </a>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border/40" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Chat
+                  </span>
+                </div>
+              </div>
+
+              {user && (
+                <div className="h-[400px]">
+                  <ChatPanel 
+                    orderId={selectedOrder.id} 
+                    currentUserId={user.id} 
+                    currentUserIsAdmin={true} 
+                  />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

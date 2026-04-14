@@ -142,6 +142,28 @@ export interface DashboardSummary {
   pendingOrders: number;
 }
 
+export interface Message {
+  id: string;
+  orderId: string;
+  userId: string;
+  senderName: string;
+  isAdmin: boolean;
+  content: string;
+  createdAt: string;
+}
+
+export interface SendMessageBody {
+  /**
+   * @minLength 1
+   * @maxLength 2000
+   */
+  content: string;
+}
+
+export interface CaptureOrderPaymentBody {
+  paypalOrderId: string;
+}
+
 export type CreatePaypalOrderBodyPackageType =
   (typeof CreatePaypalOrderBodyPackageType)[keyof typeof CreatePaypalOrderBodyPackageType];
 

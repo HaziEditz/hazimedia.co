@@ -1,15 +1,81 @@
-import { useListOrders, getListOrdersQueryKey } from "@workspace/api-client-react";
+import { useState } from "react";
+import { 
+  useListOrders, 
+  getListOrdersQueryKey, 
+  useCreateOrderPayment, 
+  useCaptureOrderPayment,
+  Order
+} from "@workspace/api-client-react";
 import { format } from "date-fns";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, MessageSquare, CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { useAuth } from "@/lib/auth";
+
 import { DashboardLayout } from "./layout";
+import { ChatPanel } from "@/components/ChatPanel";
+
+const PACKAGE_PRICES: Record<string, number> = {
+  starter: 9,
+  growth: 19,
+  premium: 39,
+};
 
 export default function Orders() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [chatOrder, setChatOrder] = useState<Order | null>(null);
+  const [payOrder, setPayOrder] = useState<Order | null>(null);
+
   const { data: orders, isLoading } = useListOrders({
     query: {
       queryKey: getListOrdersQueryKey(),
+    }
+  });
+
+  const createPayment = useCreateOrderPayment({
+    mutation: {
+      onError: () => {
+        toast({
+          title: "Payment Error",
+          description: "Could not initialize payment. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  });
+
+  const capturePayment = useCaptureOrderPayment({
+    mutation: {
+      onSuccess: () => {
+        toast({
+          title: "Payment Successful",
+          description: "Your order is now being processed.",
+        });
+        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
+        setPayOrder(null);
+      },
+      onError: () => {
+        toast({
+          title: "Payment Error",
+          description: "Could not capture payment. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -73,6 +139,7 @@ export default function Orders() {
                     <TableHead>Target Link</TableHead>
                     <TableHead>Package</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Chat</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -94,6 +161,29 @@ export default function Orders() {
                       </TableCell>
                       <TableCell>{getPackageBadge(order.packageType)}</TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end items-center gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setChatOrder(order)}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Chat
+                          </Button>
+                          {order.status === "active" && (
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => setPayOrder(order)}
+                            >
+                              <CreditCard className="h-4 w-4 mr-2" />
+                              Pay Now
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -102,6 +192,83 @@ export default function Orders() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Chat Dialog */}
+      <Dialog open={!!chatOrder} onOpenChange={(open) => !open && setChatOrder(null)}>
+        <DialogContent className="sm:max-w-[500px] h-[600px] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Order Chat</DialogTitle>
+            <DialogDescription>
+              Communicate directly with the Hazi Media team about this order.
+            </DialogDescription>
+          </DialogHeader>
+          {chatOrder && user && (
+            <div className="flex-1 min-h-0 mt-4">
+              <ChatPanel 
+                orderId={chatOrder.id} 
+                currentUserId={user.id} 
+                currentUserIsAdmin={user.isAdmin} 
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={!!payOrder} onOpenChange={(open) => !open && setPayOrder(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Complete Payment</DialogTitle>
+            <DialogDescription>
+              Pay for your {payOrder?.packageType} package to start the promotion.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {payOrder && (
+            <div className="space-y-6 mt-4">
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border/40">
+                <div className="flex flex-col">
+                  <span className="font-medium capitalize">{payOrder.packageType} Package</span>
+                  <span className="text-xs text-muted-foreground break-all max-w-[200px] truncate">{payOrder.instagramLink}</span>
+                </div>
+                <span className="text-2xl font-bold">${PACKAGE_PRICES[payOrder.packageType]}</span>
+              </div>
+
+              <div className="min-h-[150px]">
+                <PayPalScriptProvider 
+                  options={{ 
+                    clientId: (import.meta.env.VITE_PAYPAL_CLIENT_ID || "test").trim(),
+                    currency: "USD",
+                    components: "buttons"
+                  }}
+                >
+                  <PayPalButtons
+                    style={{ layout: "vertical", shape: "rect" }}
+                    createOrder={async () => {
+                      const res = await createPayment.mutateAsync({ id: payOrder.id });
+                      return res.paypalOrderId;
+                    }}
+                    onApprove={async (data) => {
+                      await capturePayment.mutateAsync({ 
+                        id: payOrder.id, 
+                        data: { paypalOrderId: data.orderID } 
+                      });
+                    }}
+                    onError={(err) => {
+                      console.error("PayPal Checkout Error", err);
+                      toast({
+                        title: "Payment Failed",
+                        description: "There was an error with PayPal.",
+                        variant: "destructive",
+                      });
+                    }}
+                  />
+                </PayPalScriptProvider>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

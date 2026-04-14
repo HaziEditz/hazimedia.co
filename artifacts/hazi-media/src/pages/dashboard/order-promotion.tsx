@@ -147,16 +147,16 @@ export default function OrderPromotion() {
                   name="instagramLink"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Instagram Link</FormLabel>
+                      <FormLabel>Promotion Link</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="https://instagram.com/p/..."
+                          placeholder="https://..."
                           className="bg-background/50"
                           {...field}
                         />
                       </FormControl>
                       <FormDescription>
-                        The exact post or profile you want us to promote.
+                        The link to whatever you want us to promote — any platform.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

@@ -96,6 +96,71 @@ export const GetOrderResponse = zod.object({
 });
 
 /**
+ * @summary Get chat messages for an order
+ */
+export const ListMessagesParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const ListMessagesResponseItem = zod.object({
+  id: zod.string(),
+  orderId: zod.string(),
+  userId: zod.string(),
+  senderName: zod.string(),
+  isAdmin: zod.boolean(),
+  content: zod.string(),
+  createdAt: zod.string(),
+});
+export const ListMessagesResponse = zod.array(ListMessagesResponseItem);
+
+/**
+ * @summary Send a chat message for an order
+ */
+export const SendMessageParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const sendMessageBodyContentMax = 2000;
+
+export const SendMessageBody = zod.object({
+  content: zod.string().min(1).max(sendMessageBodyContentMax),
+});
+
+/**
+ * @summary Create a PayPal payment for an approved order
+ */
+export const CreateOrderPaymentParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const CreateOrderPaymentResponse = zod.object({
+  paypalOrderId: zod.string(),
+  amount: zod.string(),
+  currency: zod.string(),
+});
+
+/**
+ * @summary Capture PayPal payment for an order and mark it completed
+ */
+export const CaptureOrderPaymentParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const CaptureOrderPaymentBody = zod.object({
+  paypalOrderId: zod.string(),
+});
+
+export const CaptureOrderPaymentResponse = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  instagramLink: zod.string(),
+  message: zod.string(),
+  packageType: zod.enum(["starter", "growth", "premium"]),
+  status: zod.enum(["pending", "active", "completed", "cancelled"]),
+  createdAt: zod.coerce.date(),
+});
+
+/**
  * @summary Update order status (admin only)
  */
 export const UpdateOrderStatusParams = zod.object({

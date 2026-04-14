@@ -20,6 +20,7 @@ import type {
   AdminOrder,
   AdminSummary,
   AuthResponse,
+  CaptureOrderPaymentBody,
   CapturePaypalOrderBody,
   ClientInfo,
   CreateOrderBody,
@@ -29,8 +30,10 @@ import type {
   ErrorResponse,
   HealthStatus,
   LoginBody,
+  Message,
   Order,
   RegisterBody,
+  SendMessageBody,
   UpdateOrderStatusBody,
   User,
 } from "./api.schemas";
@@ -597,6 +600,351 @@ export function useGetOrder<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get chat messages for an order
+ */
+export const getListMessagesUrl = (id: string) => {
+  return `/api/orders/${id}/messages`;
+};
+
+export const listMessages = async (
+  id: string,
+  options?: RequestInit,
+): Promise<Message[]> => {
+  return customFetch<Message[]>(getListMessagesUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMessagesQueryKey = (id: string) => {
+  return [`/api/orders/${id}/messages`] as const;
+};
+
+export const getListMessagesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMessages>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMessages>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMessagesQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMessages>>> = ({
+    signal,
+  }) => listMessages(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMessages>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMessagesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMessages>>
+>;
+export type ListMessagesQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get chat messages for an order
+ */
+
+export function useListMessages<
+  TData = Awaited<ReturnType<typeof listMessages>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMessages>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMessagesQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Send a chat message for an order
+ */
+export const getSendMessageUrl = (id: string) => {
+  return `/api/orders/${id}/messages`;
+};
+
+export const sendMessage = async (
+  id: string,
+  sendMessageBody: SendMessageBody,
+  options?: RequestInit,
+): Promise<Message> => {
+  return customFetch<Message>(getSendMessageUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sendMessageBody),
+  });
+};
+
+export const getSendMessageMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendMessage>>,
+    TError,
+    { id: string; data: BodyType<SendMessageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendMessage>>,
+  TError,
+  { id: string; data: BodyType<SendMessageBody> },
+  TContext
+> => {
+  const mutationKey = ["sendMessage"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendMessage>>,
+    { id: string; data: BodyType<SendMessageBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return sendMessage(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendMessageMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendMessage>>
+>;
+export type SendMessageMutationBody = BodyType<SendMessageBody>;
+export type SendMessageMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Send a chat message for an order
+ */
+export const useSendMessage = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendMessage>>,
+    TError,
+    { id: string; data: BodyType<SendMessageBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendMessage>>,
+  TError,
+  { id: string; data: BodyType<SendMessageBody> },
+  TContext
+> => {
+  return useMutation(getSendMessageMutationOptions(options));
+};
+
+/**
+ * @summary Create a PayPal payment for an approved order
+ */
+export const getCreateOrderPaymentUrl = (id: string) => {
+  return `/api/orders/${id}/pay`;
+};
+
+export const createOrderPayment = async (
+  id: string,
+  options?: RequestInit,
+): Promise<CreatePaypalOrderResponse> => {
+  return customFetch<CreatePaypalOrderResponse>(getCreateOrderPaymentUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateOrderPaymentMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createOrderPayment>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createOrderPayment>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["createOrderPayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createOrderPayment>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return createOrderPayment(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateOrderPaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createOrderPayment>>
+>;
+
+export type CreateOrderPaymentMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Create a PayPal payment for an approved order
+ */
+export const useCreateOrderPayment = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createOrderPayment>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createOrderPayment>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getCreateOrderPaymentMutationOptions(options));
+};
+
+/**
+ * @summary Capture PayPal payment for an order and mark it completed
+ */
+export const getCaptureOrderPaymentUrl = (id: string) => {
+  return `/api/orders/${id}/capture`;
+};
+
+export const captureOrderPayment = async (
+  id: string,
+  captureOrderPaymentBody: CaptureOrderPaymentBody,
+  options?: RequestInit,
+): Promise<Order> => {
+  return customFetch<Order>(getCaptureOrderPaymentUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(captureOrderPaymentBody),
+  });
+};
+
+export const getCaptureOrderPaymentMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof captureOrderPayment>>,
+    TError,
+    { id: string; data: BodyType<CaptureOrderPaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof captureOrderPayment>>,
+  TError,
+  { id: string; data: BodyType<CaptureOrderPaymentBody> },
+  TContext
+> => {
+  const mutationKey = ["captureOrderPayment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof captureOrderPayment>>,
+    { id: string; data: BodyType<CaptureOrderPaymentBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return captureOrderPayment(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CaptureOrderPaymentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof captureOrderPayment>>
+>;
+export type CaptureOrderPaymentMutationBody = BodyType<CaptureOrderPaymentBody>;
+export type CaptureOrderPaymentMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Capture PayPal payment for an order and mark it completed
+ */
+export const useCaptureOrderPayment = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof captureOrderPayment>>,
+    TError,
+    { id: string; data: BodyType<CaptureOrderPaymentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof captureOrderPayment>>,
+  TError,
+  { id: string; data: BodyType<CaptureOrderPaymentBody> },
+  TContext
+> => {
+  return useMutation(getCaptureOrderPaymentMutationOptions(options));
+};
 
 /**
  * @summary Update order status (admin only)

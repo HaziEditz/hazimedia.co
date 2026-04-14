@@ -180,6 +180,126 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /orders/{id}/messages:
+    get:
+      operationId: listMessages
+      tags: [orders]
+      summary: Get chat messages for an order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: sendMessage
+      tags: [orders]
+      summary: Send a chat message for an order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageBody"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}/pay:
+    post:
+      operationId: createOrderPayment
+      tags: [orders]
+      summary: Create a PayPal payment for an approved order
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PayPal order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePaypalOrderResponse"
+        "403":
+          description: Forbidden or order not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}/capture:
+    post:
+      operationId: captureOrderPayment
+      tags: [orders]
+      summary: Capture PayPal payment for an order and mark it completed
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureOrderPaymentBody"
+      responses:
+        "200":
+          description: Payment captured, order completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Payment failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders/{id}/status:
     patch:
       operationId: updateOrderStatus
@@ -572,6 +692,50 @@ components:
         - activeOrders
         - completedOrders
         - pendingOrders
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        orderId:
+          type: string
+        userId:
+          type: string
+        senderName:
+          type: string
+        isAdmin:
+          type: boolean
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - orderId
+        - userId
+        - senderName
+        - isAdmin
+        - content
+        - createdAt
+
+    SendMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+      required:
+        - content
+
+    CaptureOrderPaymentBody:
+      type: object
+      properties:
+        paypalOrderId:
+          type: string
+      required:
+        - paypalOrderId
 
     CreatePaypalOrderBody:
       type: object
