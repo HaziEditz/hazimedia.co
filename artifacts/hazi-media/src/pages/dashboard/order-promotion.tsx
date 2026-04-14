@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Rocket, Zap, Crown, CheckCircle2 } from "lucide-react";
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { Rocket, Zap, Crown, CheckCircle2, AlertCircle } from "lucide-react";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 
 import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "./layout";
@@ -28,7 +28,7 @@ const packages = [
     id: "starter",
     title: "Starter",
     description: "Basic promotion campaign",
-    price: 19,
+    price: 9,
     icon: Rocket,
     color: "text-muted-foreground"
   },
@@ -36,7 +36,7 @@ const packages = [
     id: "growth",
     title: "Growth",
     description: "Expanded reach with targeting",
-    price: 29,
+    price: 19,
     icon: Zap,
     color: "text-purple-500"
   },
@@ -44,7 +44,7 @@ const packages = [
     id: "premium",
     title: "Premium",
     description: "Full-scale domination campaign",
-    price: 49,
+    price: 39,
     icon: Crown,
     color: "text-primary"
   }
@@ -257,34 +257,29 @@ export default function OrderPromotion() {
                   </div>
                   <p className="text-2xl font-bold">${selectedPkgData?.price}</p>
                 </div>
-                
-                {!isFormValid ? (
-                  <div className="p-4 bg-muted/50 rounded-md text-sm text-center text-muted-foreground">
-                    Please fill out all campaign details above to proceed with payment.
-                  </div>
-                ) : (
-                  <div className="relative min-h-[150px] z-0">
-                    <PayPalScriptProvider options={{ 
-                      clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
-                      components: "buttons",
-                      currency: "USD"
-                    }}>
-                      <PayPalButtons 
-                        style={{ layout: "vertical", color: "blue", shape: "rect", label: "pay" }}
-                        createOrder={handleCreateOrder}
-                        onApprove={handleApprove}
-                        onError={(err) => {
-                          console.error("PayPal Error:", err);
-                          toast({
-                            variant: "destructive",
-                            title: "Payment Error",
-                            description: "There was an issue loading or processing PayPal. Please try again."
-                          });
-                        }}
-                      />
-                    </PayPalScriptProvider>
+
+                {!isFormValid && (
+                  <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-sm text-amber-500">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    Fill out your Instagram link and campaign notes above before paying.
                   </div>
                 )}
+
+                <div className={`relative min-h-[150px] z-0 transition-opacity ${!isFormValid ? "opacity-40 pointer-events-none" : ""}`}>
+                  <PayPalButtons
+                    style={{ layout: "vertical", color: "blue", shape: "rect", label: "pay" }}
+                    createOrder={handleCreateOrder}
+                    onApprove={handleApprove}
+                    onError={(err) => {
+                      console.error("PayPal Error:", err);
+                      toast({
+                        variant: "destructive",
+                        title: "Payment Error",
+                        description: "There was an issue with PayPal. Please try again.",
+                      });
+                    }}
+                  />
+                </div>
               </CardContent>
             </Card>
           </form>

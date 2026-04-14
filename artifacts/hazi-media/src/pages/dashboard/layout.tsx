@@ -1,11 +1,21 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
-import { LayoutDashboard, ShoppingBag, PlusCircle, Settings, LogOut, Loader2, Shield, Users, ClipboardList } from "lucide-react";
+import { useGetAdminSummary } from "@workspace/api-client-react";
+import { LayoutDashboard, ShoppingBag, PlusCircle, Settings, LogOut, Loader2, Shield, Users, ClipboardList, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, logout } = useAuth();
   const [location] = useLocation();
+
+  const { data: adminSummary } = useGetAdminSummary({
+    query: {
+      enabled: !!user?.isAdmin,
+      refetchInterval: 30000,
+    },
+  });
+
+  const pendingCount = adminSummary?.pendingOrders ?? 0;
 
   if (isLoading) {
     return (
@@ -16,21 +26,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return null; // Will redirect in AuthProvider or specific pages
+    return null;
   }
 
   const navItems = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
+    { href: "/dashboard/orders", label: "My Orders", icon: ShoppingBag },
     { href: "/dashboard/order-promotion", label: "New Promotion", icon: PlusCircle },
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 
-  const adminItems = user?.isAdmin ? [
-    { href: "/admin", label: "Admin Panel", icon: Shield },
-    { href: "/admin/orders", label: "All Orders", icon: ClipboardList },
-    { href: "/admin/clients", label: "Clients", icon: Users },
-  ] : [];
+  const adminItems = user?.isAdmin
+    ? [
+        { href: "/admin", label: "Admin Panel", icon: Shield, badge: 0 },
+        { href: "/admin/orders", label: "All Orders", icon: ClipboardList, badge: pendingCount },
+        { href: "/admin/clients", label: "Clients", icon: Users, badge: 0 },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen flex bg-background/50">
@@ -63,10 +75,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
           {user?.isAdmin && (
             <>
-              <div className="pt-4 pb-2 px-3">
+              <div className="pt-4 pb-2 px-3 flex items-center justify-between">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Administration
                 </p>
+                {pendingCount > 0 && (
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Bell className="h-3 w-3" />
+                    <span className="text-xs font-bold">{pendingCount}</span>
+                  </div>
+                )}
               </div>
               {adminItems.map((item) => {
                 const isActive = location === item.href;
@@ -80,7 +98,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                       }`}
                     >
                       <item.icon className="h-4 w-4" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.badge > 0 && (
+                        <span className="ml-auto bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                          {item.badge}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 );
@@ -108,13 +131,21 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* Mobile Header */}
-        <header className="h-16 flex items-center px-4 border-b border-border/40 bg-card/30 backdrop-blur-xl md:hidden">
+        <header className="h-16 flex items-center justify-between px-4 border-b border-border/40 bg-card/30 backdrop-blur-xl md:hidden">
           <Link href="/" className="text-lg font-bold tracking-tight text-foreground flex items-center gap-2">
             <div className="w-5 h-5 rounded bg-primary" />
             HAZI MEDIA
           </Link>
+          {user?.isAdmin && pendingCount > 0 && (
+            <Link href="/admin/orders">
+              <div className="flex items-center gap-1.5 text-amber-500 text-sm font-medium">
+                <Bell className="h-4 w-4" />
+                <span>{pendingCount} pending</span>
+              </div>
+            </Link>
+          )}
         </header>
-        
+
         <div className="flex-1 overflow-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto w-full">
             {children}

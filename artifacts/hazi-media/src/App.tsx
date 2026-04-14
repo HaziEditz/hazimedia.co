@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import NotFound from "@/pages/not-found";
 
 import Landing from "@/pages/index";
@@ -83,12 +84,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AuthProvider>
-            <Router />
-          </AuthProvider>
-        </WouterRouter>
-        <Toaster />
+        <PayPalScriptProvider options={{
+          clientId: (import.meta.env.VITE_PAYPAL_CLIENT_ID || "test").trim(),
+          components: "buttons",
+          currency: "USD",
+        }}>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AuthProvider>
+              <Router />
+            </AuthProvider>
+          </WouterRouter>
+          <Toaster />
+        </PayPalScriptProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
