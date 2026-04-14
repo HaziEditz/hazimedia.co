@@ -1,0 +1,44 @@
+src/components/ui/select.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+Menu
+✓ 2165 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                   0.73 kB │ gzip:   0.41 kB
+dist/public/assets/index-yc6x-6U8.css  107.69 kB │ gzip:  17.46 kB
+dist/public/assets/index-C1Tzh2r8.js   573.89 kB │ gzip: 176.11 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.85s
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> node ./build.mjs
+  dist/index.mjs                       2.3mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   4.0mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.0kb
+  dist/pino-pretty.mjs.map           203.9kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 450ms
+==> Uploading build...
+==> Uploaded in 3.4s. Compression took 4.9s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'pnpm --filter @workspace/api-server run start'
+> @workspace/api-server@0.0.0 start /opt/render/project/src/artifacts/api-server
+> node --enable-source-maps ./dist/index.mjs
+{"level":30,"time":1776158891956,"pid":81,"hostname":"srv-d7f0cctckfvc739r9msg-hibernate-6df4894997-b5gzq","port":10000,"msg":"Server listening"}
+{"level":30,"time":1776158892912,"pid":81,"hostname":"srv-d7f0cctckfvc739r9msg-hibernate-6df4894997-b5gzq","req":{"id":1,"method":"HEAD","url":"/"},"res":{"statusCode":404},"responseTime":4,"msg":"request completed"}
+==> Your service is live 🎉
+{"level":30,"time":1776158897135,"pid":81,"hostname":"srv-d7f0cctckfvc739r9msg-hibernate-6df4894997-b5gzq","req":{"id":2,"method":"GET","url":"/"},"res":{"statusCode":404},"responseTime":1,"msg":"request completed"}
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://hazimedia.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////
